@@ -461,12 +461,14 @@ function goBack() { showPage(backPage); }
 
 // ===== DASHBOARD =====
 let _dashDate = today();
+let _dashView = 'day'; // 'day' | 'month'
 
 function dashPrevDay() { const d=new Date(_dashDate); d.setDate(d.getDate()-1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 function dashNextDay() { const d=new Date(_dashDate); d.setDate(d.getDate()+1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 function dashSetDate(v) { if(v) { _dashDate=v; refreshDashboard(); } }
 function dashPrevMonth() { const d=new Date(_dashDate); d.setDate(1); d.setMonth(d.getMonth()-1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 function dashNextMonth() { const d=new Date(_dashDate); d.setDate(1); d.setMonth(d.getMonth()+1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
+function dashToggleView(v) { _dashView=v; refreshDashboard(); }
 
 function refreshDashboard() {
   const clients = getClients().filter(c=>!c.is_archived);
@@ -583,49 +585,51 @@ function refreshDashboard() {
       </div>
     </div>
     ${calHTML}
-    <!-- Day Customer List -->
+    <!-- Customer List with Day/Month toggle -->
     <div class="card" style="padding:12px 14px">
-      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">📋 当日客户（${dayDeals} 人）</div>
-      ${dayDeals===0
-        ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">当天没有新增客户</div>`
-        : dayC.map(c=>`
-          <div onclick="editClient('${c.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#1f2937">${c.name||'—'}</div>
-              <div style="font-size:11px;color:#6b7280;margin-top:2px">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
-            </div>
-            <div style="text-align:right">
-              <div style="font-size:12px;font-weight:600;color:#2563eb">MYR ${(parseFloat(c.actual_myr)||0).toFixed(0)}</div>
-              <div style="font-size:10px;margin-top:2px;padding:2px 6px;background:#eff6ff;border-radius:8px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
-            </div>
-          </div>
-        `).join('')
-      }
-    </div>
-    <!-- Monthly Customer List -->
-    <div class="card" style="padding:12px 14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <div style="font-size:13px;font-weight:600;color:#374151">📋 本月全部客户（${monthC.length} 人）</div>
-        <div style="font-size:11px;color:#9ca3af">${selY}-${selM}</div>
+      <!-- Toggle tabs -->
+      <div style="display:flex;background:#f3f4f6;border-radius:10px;padding:3px;margin-bottom:12px">
+        <button onclick="dashToggleView('day')" style="flex:1;padding:7px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:${_dashView==='day'?'#fff':'transparent'};color:${_dashView==='day'?'#2563eb':'#6b7280'};box-shadow:${_dashView==='day'?'0 1px 3px rgba(0,0,0,0.1)':'none'}">
+          当日 ${dayDeals} 人
+        </button>
+        <button onclick="dashToggleView('month')" style="flex:1;padding:7px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:${_dashView==='month'?'#fff':'transparent'};color:${_dashView==='month'?'#2563eb':'#6b7280'};box-shadow:${_dashView==='month'?'0 1px 3px rgba(0,0,0,0.1)':'none'}">
+          当月 ${monthC.length} 人
+        </button>
       </div>
-      ${monthC.length===0
-        ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">本月暂无客户</div>`
-        : monthC.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).map(c=>{
-            const ds = (c.created_at||'').substring(0,10);
-            const dayNum = ds.substring(8,10);
-            return `<div onclick="editClient('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
-              <div style="min-width:28px;height:28px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b7280">${dayNum}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-size:13px;font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div>
-                <div style="font-size:11px;color:#6b7280;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
+      <!-- Day view -->
+      ${_dashView==='day' ? (
+        dayDeals===0
+          ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">当天没有新增客户</div>`
+          : dayC.map(c=>`
+            <div onclick="editClient('${c.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#1f2937">${c.name||'—'}</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:2px">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
               </div>
-              <div style="text-align:right;flex-shrink:0">
+              <div style="text-align:right">
                 <div style="font-size:12px;font-weight:600;color:#2563eb">MYR ${(parseFloat(c.actual_myr)||0).toFixed(0)}</div>
-                <div style="font-size:10px;margin-top:2px;padding:1px 5px;background:#eff6ff;border-radius:6px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
+                <div style="font-size:10px;margin-top:2px;padding:2px 6px;background:#eff6ff;border-radius:8px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
               </div>
-            </div>`;
-          }).join('')
-      }
+            </div>
+          `).join('')
+      ) : (
+        monthC.length===0
+          ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">本月暂无客户</div>`
+          : monthC.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).map(c=>{
+              const dayNum = (c.created_at||'').substring(8,10);
+              return `<div onclick="editClient('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
+                <div style="min-width:28px;height:28px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b7280;flex-shrink:0">${dayNum}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div>
+                  <div style="font-size:11px;color:#6b7280;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
+                </div>
+                <div style="text-align:right;flex-shrink:0">
+                  <div style="font-size:12px;font-weight:600;color:#2563eb">MYR ${(parseFloat(c.actual_myr)||0).toFixed(0)}</div>
+                  <div style="font-size:10px;margin-top:2px;padding:1px 5px;background:#eff6ff;border-radius:6px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
+                </div>
+              </div>`;
+            }).join('')
+      )}
     </div>
     <!-- Monthly Summary -->
     <div class="card">
