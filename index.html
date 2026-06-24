@@ -1232,4 +1232,66 @@ function exportCSV() {
   if(!clients.length) { alert('没有数据可导出'); return; }
   const headers = ['姓名','性别','国籍','护照号码','出生日期','电话','微信','客户群','代理名字','负责人','申请项目','处理状态','提交日期','批文日期','贴签日期','到期日期','已上签证','上签证日期','付款币种','收款金额','实际MYR','Deposit','尾款','本钱','代理佣金','额外收入','公司利润','是否归档','创建日期'];
   const rows = clients.map(c=>[
-    c
+    c.name,c.gender,c.nationality,c.passport_no,c.date_of_birth,c.phone,c.wechat,
+    c.client_group,c.agent_name,c.responsible_person,c.application_type,c.status,
+    c.submission_date,c.approval_date,c.visa_sticker_date,c.expiry_date,
+    c.visa_attended?'是':'否',c.visa_attended_date,
+    c.currency,c.collection_amount,c.actual_myr,c.deposit,c.balance_due,
+    c.cost,c.agent_commission,c.extra_income,c.profit,
+    c.is_archived?'已归档':'活跃',(c.created_at||'').split('T')[0]
+  ].map(v=>`"${String(v||'').replace(/"/g,'""')}"`));
+  const csv = '﻿'+[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob = new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `金鑫优签-客户数据-${today()}.csv`;
+  a.click();
+}
+
+function importData() { document.getElementById('import-file').click(); }
+function handleImport(input) {
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      showLoading(true);
+      if(data.clients && data.clients.length) {
+        const rows = data.clients.map(c=>({...c, updated_at: new Date().toISOString()}));
+        await sb.from('clients').upsert(rows, {onConflict:'id'});
+        clientsCache = [...rows, ...clientsCache.filter(c=>!rows.find(r=>r.id===c.id))];
+        clientsCache.sort((a,b)=>b.created_at?.localeCompare(a.created_at||'')||0);
+      }
+      if(data.rates && data.rates.length) {
+        await sb.from('exchange_rates').upsert(data.rates, {onConflict:'date'});
+        ratesCache = data.rates;
+      }
+      showLoading(false);
+      alert('导入成功！共 '+(data.clients?.length||0)+' 条客户数据');
+      loadSettings();
+    } catch(err) { showLoading(false); alert('导入失败：'+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+async function clearAllData() {
+  if(!confirm('确定清空所有数据？此操作不可撤销！')) return;
+  if(!confirm('再次确认：所有客户数据将被永久删除！')) return;
+  showLoading(true);
+  await Promise.all([
+    sb.from('clients').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('exchange_rates').delete().neq('id','00000000-0000-0000-0000-000000000000')
+  ]);
+  clientsCache = []; ratesCache = [];
+  showLoading(false);
+  alert('已清空');
+  loadSettings();
+}
+
+// ===== INIT =====
+window.onload = function() {
+  initAuth();
+};
+</script>
+</body>
+</html>
