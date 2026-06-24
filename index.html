@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>金鑫优签 签证管理系统 V2.0</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#f0f2f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;padding:0;overflow-x:hidden}
+.page{display:none;min-height:100vh;padding-bottom:72px}
+.page.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:50;height:64px;display:flex;align-items:center;justify-content:space-around;padding:0 8px}
+.nav-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 12px;border:none;background:none;cursor:pointer;color:#9ca3af;font-size:11px;gap:2px}
+.nav-btn.active{color:#2563eb}
+.nav-btn-center{width:56px;height:56px;border-radius:50%;background:#1a3a5c;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-size:10px;gap:1px;margin-bottom:8px;box-shadow:0 4px 12px rgba(26,58,92,0.4)}
+.header{position:fixed;top:0;left:0;right:0;background:#1a3a5c;color:#fff;z-index:40;padding:12px 16px}
+.card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px}
+.badge{display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:500}
+.badge-提交资料{background:#dbeafe;color:#1d4ed8}
+.badge-等待批文{background:#fef9c3;color:#a16207}
+.badge-完成批文{background:#f3e8ff;color:#7c3aed}
+.badge-完成贴签{background:#dcfce7;color:#16a34a}
+.badge-完成{background:#f3f4f6;color:#6b7280}
+input,select,textarea{border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:14px;width:100%;outline:none;background:#fff;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{border-color:#3b82f6}
+.btn-primary{background:#1a3a5c;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:500;cursor:pointer;width:100%}
+.btn-secondary{background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:500;cursor:pointer;width:100%}
+.field-label{font-size:12px;color:#6b7280;margin-bottom:4px;display:block}
+.section-title{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #f3f4f6;padding-bottom:8px;margin-bottom:12px}
+.stat-value{font-size:28px;font-weight:700;margin:4px 0 2px}
+.stat-label{font-size:11px;color:#6b7280}
+.row{display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid #f9fafb}
+.row:last-child{border-bottom:none}
+.row-label{font-size:12px;color:#9ca3af;min-width:90px}
+.row-value{font-size:13px;color:#374151;text-align:right;flex:1}
+.client-card{background:#fff;border-radius:12px;padding:14px 14px 14px 36px;margin-bottom:8px;cursor:pointer;text-align:left;border:none;width:100%;display:block;position:relative}
+.drag-handle{position:absolute;left:0;top:0;bottom:0;width:32px;display:flex;align-items:center;justify-content:center;cursor:grab;color:#d1d5db;touch-action:none;user-select:none;-webkit-user-select:none}
+.drag-handle:active{cursor:grabbing;color:#9ca3af}
+.sortable-ghost{opacity:0.4;background:#e0e7ff !important}
+.sortable-chosen{box-shadow:0 8px 24px rgba(37,99,235,0.2) !important}
+.tab-bar{display:flex;gap:6px;overflow-x:auto;padding:6px 12px 8px;-ms-overflow-style:none;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:5px 12px;border-radius:9999px;font-size:12px;font-weight:500;border:none;cursor:pointer}
+.tab.active{background:#fff;color:#1d4ed8}
+.tab:not(.active){background:rgba(255,255,255,0.2);color:rgba(255,255,255,0.8)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;color:#9ca3af;text-align:center}
+.addon-box{background:#f9fafb;border-radius:8px;padding:12px;margin-bottom:8px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;display:none;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-height:90vh;overflow-y:auto}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:40px;height:40px;border:4px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <span style="color:#fff;font-size:14px">处理中...</span>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- Login Screen -->
+<div id="login-screen" style="position:fixed;inset:0;background:linear-gradient(150deg,#1a3a5c 0%,#2563eb 100%);z-index:300;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:24px">
+  <div style="text-align:center;margin-bottom:36px">
+    <div style="font-size:52px;margin-bottom:12px">🏢</div>
+    <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0 0 4px">金鑫优签</h1>
+    <p style="color:rgba(255,255,255,0.65);font-size:13px;margin:0">签证管理系统 V2.0</p>
+  </div>
+  <div style="background:#fff;border-radius:18px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <p style="font-size:14px;color:#374151;font-weight:600;margin:0 0 14px;text-align:center">请输入登录密码</p>
+    <input id="login-password" type="password" placeholder="密码" autocapitalize="none" autocorrect="off" spellcheck="false" style="width:100%;font-size:16px;letter-spacing:2px;text-align:center;margin-bottom:12px" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="login-error" style="color:#ef4444;font-size:13px;min-height:18px;margin-bottom:8px;text-align:center"></div>
+    <button onclick="doLogin()" style="width:100%;background:#1a3a5c;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer">登录</button>
+  </div>
+  <p style="color:rgba(255,255,255,0.35);font-size:11px;margin-top:24px">金鑫优签 · 内部管理系统</p>
+</div>
+
+<!-- ===== PAGE: DASHBOARD ===== -->
+<div id="page-dashboard" class="page active">
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:600;font-size:16px">签证管理 V2.0</span>
+      <div style="display:flex;gap:12px">
+        <button onclick="refreshDashboard()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
+          <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+        <button onclick="showPage('settings')" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
+          <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="dashboard-content" style="padding:70px 12px 12px"></div>
+</div>
+
+<!-- ===== PAGE: CUSTOMERS ===== -->
+<div id="page-customers" class="page">
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-weight:600;font-size:16px">客户列表</span>
+      <button onclick="loadCustomers()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
+        <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+    </div>
+    <input id="search-input" type="text" placeholder="搜索姓名、护照号、电话..." style="border:0;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;margin-bottom:6px;color:#111827" oninput="filterCustomers()">
+    <div class="tab-bar" id="status-tabs">
+      <button class="tab active" data-filter="all" onclick="setTab(this,'all')">全部</button>
+      <button class="tab" data-filter="提交资料" onclick="setTab(this,'提交资料')">提交资料</button>
+      <button class="tab" data-filter="等待批文" onclick="setTab(this,'等待批文')">等待批文</button>
+      <button class="tab" data-filter="完成批文" onclick="setTab(this,'完成批文')">完成批文</button>
+      <button class="tab" data-filter="完成贴签" onclick="setTab(this,'完成贴签')">完成贴签</button>
+      <button class="tab" data-filter="完成" onclick="setTab(this,'完成')">完成</button>
+      <button class="tab" data-filter="已上签" onclick="setTab(this,'已上签')">✅ 已上签</button>
+      <button class="tab" data-filter="未上签" onclick="setTab(this,'未上签')">⏳ 未上签</button>
+    </div>
+  </div>
+  <div id="customers-list" style="padding:140px 12px 12px"></div>
+</div>
+
+<!-- ===== PAGE: CUSTOMER FORM ===== -->
+<div id="page-form" class="page">
+  <div class="header" style="padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="goBack()" style="background:none;border:none;color:#fff;cursor:pointer">
+        <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <span id="form-title" style="font-weight:600;font-size:16px">新增客户</span>
+    </div>
+  </div>
+  <div id="form-content" style="padding:70px 12px 12px"></div>
+</div>
+
+<!-- ===== PAGE: CUSTOMER DETAIL ===== -->
+<div id="page-detail" class="page">
+  <div class="header" style="padding:0 16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="showPage('customers')" style="background:none;border:none;color:#fff;cursor:pointer">
+          <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <span id="detail-name" style="font-weight:600;font-size:15px"></span>
+      </div>
+      <button id="detail-edit-btn" onclick="" style="background:rgba(255,255,255,0.2);border:none;color:#fff;cursor:pointer;padding:4px 12px;border-radius:8px;font-size:13px">编辑</button>
+    </div>
+    <div style="padding-bottom:10px"><span id="detail-status-badge"></span></div>
+  </div>
+  <div id="detail-content" style="padding:80px 12px 12px"></div>
+</div>
+
+<!-- ===== PAGE: EXCHANGE ===== -->
+<div id="page-exchange" class="page">
+  <div class="header" style="padding:12px 16px">
+    <span style="font-weight:600;font-size:16px">汇率中心</span>
+  </div>
+  <div style="padding:70px 12px 12px">
+    <div class="card">
+      <div class="section-title">当前汇率</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:#eff6ff;border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px">🇨🇳 人民币 RMB</div>
+          <div id="cur-rmb" style="font-size:26px;font-weight:700;color:#1d4ed8">—</div>
+          <div style="font-size:11px;color:#9ca3af">RMB = 1 MYR</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:11px;color:#6b7280;margin-bottom:4px">💵 USDT</div>
+          <div id="cur-usdt" style="font-size:26px;font-weight:700;color:#16a34a">—</div>
+          <div style="font-size:11px;color:#9ca3af">1 USDT = X MYR</div>
+        </div>
+      </div>
+      <div id="rate-hint" style="text-align:center;font-size:12px;color:#f59e0b;margin-top:8px">⚡ 汇率请先手动输入</div>
+    </div>
+    <div class="card">
+      <div class="section-title">更新汇率</div>
+      <div style="margin-bottom:10px">
+        <label class="field-label">日期</label>
+        <input type="date" id="rate-date">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <label class="field-label">RMB 汇率</label>
+          <input type="number" step="0.0001" id="rate-rmb" placeholder="0.0000">
+        </div>
+        <div>
+          <label class="field-label">USDT 汇率</label>
+          <input type="number" step="0.0001" id="rate-usdt" placeholder="0.0000">
+        </div>
+      </div>
+      <div id="rate-msg" style="font-size:13px;color:#16a34a;font-weight:500;min-height:18px;margin-bottom:8px"></div>
+      <button class="btn-primary" onclick="saveRate()">保存汇率</button>
+    </div>
+    <div class="card">
+      <div class="section-title">历史记录（最近10条）</div>
+      <div id="rate-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE: ARCHIVE ===== -->
+<div id="page-archive" class="page">
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-weight:600;font-size:16px">归档区</span>
+      <span id="archive-count" style="font-size:12px;opacity:0.7"></span>
+    </div>
+    <input type="text" placeholder="搜索归档客户..." style="border:0;border-radius:8px;padding:8px 12px;font-size:13px;width:100%" id="archive-search" oninput="filterArchive()">
+  </div>
+  <div id="archive-list" style="padding:110px 12px 12px"></div>
+</div>
+
+<!-- ===== PAGE: SETTINGS ===== -->
+<div id="page-settings" class="page">
+  <div class="header" style="padding:12px 16px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="showPage('dashboard')" style="background:none;border:none;color:#fff;cursor:pointer">
+        <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <span style="font-weight:600;font-size:16px">设置</span>
+    </div>
+  </div>
+  <div style="padding:70px 12px 12px">
+    <div class="card">
+      <div class="section-title">账号信息</div>
+      <div class="row"><span class="row-label">当前身份</span><span class="row-value" id="role-display" style="font-weight:600">—</span></div>
+      <div class="row"><span class="row-label">系统名称</span><span class="row-value">金鑫优签签证管理</span></div>
+      <div class="row"><span class="row-label">版本</span><span class="row-value">V2.0</span></div>
+      <div class="row" id="data-count-row"><span class="row-label">客户数量</span><span class="row-value" id="settings-count">—</span></div>
+      <button onclick="logout()" style="width:100%;background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:10px;font-size:13px;cursor:pointer;margin-top:10px">🚪 退出登录</button>
+    </div>
+    <div class="card" id="boss-pwd-card" style="display:none">
+      <div class="section-title">🔐 修改密码（老板专用）</div>
+      <div style="margin-bottom:10px">
+        <label class="field-label">老板密码</label>
+        <input type="password" id="new-boss-pwd" placeholder="新老板密码（留空不修改）">
+      </div>
+      <div style="margin-bottom:10px">
+        <label class="field-label">员工密码</label>
+        <input type="password" id="new-staff-pwd" placeholder="新员工密码（留空不修改）">
+      </div>
+      <button onclick="savePwds()" class="btn-primary">保存密码</button>
+      <div id="pwd-msg" style="font-size:13px;color:#16a34a;margin-top:8px;min-height:18px"></div>
+    </div>
+    <div class="card">
+      <div class="section-title">数据备份 / 导出</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:12px">定期导出数据以防止丢失</p>
+      <button class="btn-primary" style="margin-bottom:8px" onclick="exportData()">📥 导出备份 (JSON)</button>
+      <button class="btn-secondary" style="margin-bottom:8px" onclick="exportCSV()">📊 导出 Excel/CSV</button>
+      <button class="btn-secondary" onclick="importData()">📤 导入数据</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" onchange="handleImport(this)">
+    </div>
+    <div class="card">
+      <div class="section-title">🔗 Google Sheet 同步</div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:10px">同步后可在 Google Sheet 查账、查利润</p>
+      <div style="margin-bottom:10px">
+        <label class="field-label">Apps Script URL</label>
+        <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec" style="font-size:12px">
+        <p style="font-size:11px;color:#9ca3af;margin-top:4px">粘贴你的 Google Apps Script 部署 URL</p>
+      </div>
+      <div id="sync-msg" style="font-size:13px;min-height:18px;margin-bottom:4px"></div>
+      <div id="last-sync-time" style="font-size:11px;color:#9ca3af;margin-bottom:8px"></div>
+      <button class="btn-primary" style="margin-bottom:8px" onclick="syncToSheet()">📊 立即同步到 Google Sheet</button>
+      <button onclick="saveSheetUrl()" style="width:100%;background:#f3f4f6;color:#374151;border:none;border-radius:10px;padding:10px;font-size:13px;cursor:pointer">保存 URL</button>
+      <a href="https://docs.google.com/spreadsheets/d/1DThJEU0YBSQdPFiAD1FRABPaoqlREwc3urPRxnkohxc" target="_blank" style="display:block;text-align:center;font-size:13px;color:#2563eb;text-decoration:none;margin-top:10px;padding:8px;background:#eff6ff;border-radius:8px">🔗 打开 Google Sheet</a>
+    </div>
+    <div class="card" id="danger-zone-card" style="background:#fff5f5;display:none">
+      <div class="section-title" style="color:#ef4444">危险操作</div>
+      <button onclick="clearAllData()" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:10px;width:100%;font-size:13px;cursor:pointer">清空所有数据</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOTTOM NAV ===== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-dashboard" onclick="showPage('dashboard')">
+    <svg style="width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    首页
+  </button>
+  <button class="nav-btn" id="nav-customers" onclick="showPage('customers')">
+    <svg style="width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    客户
+  </button>
+  <button class="nav-btn-center" onclick="showForm(null)">
+    <svg style="width:26px;height:26px" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <span style="font-size:10px">新增</span>
+  </button>
+  <button class="nav-btn" id="nav-exchange" onclick="showPage('exchange')">
+    <svg style="width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+    汇率
+  </button>
+  <button class="nav-btn" id="nav-archive" onclick="showPage('archive')">
+    <svg style="width:22px;height:22px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+    归档
+  </button>
+</nav>
+
+<script>
+// ===== CONSTANTS =====
+const APP_TYPES = ['东马半年PVP','东马一年EP','东马一年附属证','女佣证+雇主','女佣证（自己提供雇主）','学生证（18-45岁）','绕官','买官（出境）','买官（入境）','新山机场保官','SP延期','SP延期（人不去）','E-VISA','电子签','新山激活盖章','机场盖章(KL)','查黑名单','系统第二家园 MM2H','换护照','包车载送','六个月多次商务签','中国护照吉隆坡保关(K1/K2)','新山士乃保关','MAYBANK个人户口','MAYBANK企业户口','APEC','马来西亚驾照','IAA驾照（10年）','IAA驾照（20年）'];
+const ADDON_TYPES = ['绕官','买官（出境）','买官（入境）','SP延期','SP延期（人不去）','人不去 +400','包车载送'];
+const PERSONS = ['圆','alex','胖虎','ceo'];
+const STATUSES = ['提交资料','等待批文','完成批文','完成贴签','完成'];
+
+// ===== AUTH =====
+let currentRole = null; // 'boss' | 'staff'
+function isBoss() { return currentRole === 'boss'; }
+
+async function initAuth() {
+  const saved = sessionStorage.getItem('crm_role');
+  if(saved === 'boss' || saved === 'staff') {
+    currentRole = saved;
+    document.getElementById('login-screen').style.display = 'none';
+    await initDB();
+  } else {
+    // Show login
+    setTimeout(()=>document.getElementById('login-password')?.focus(), 300);
+  }
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('login-password').value.trim();
+  const bossPwd = localStorage.getItem('crm_boss_pwd') || 'boss888';
+  const staffPwd = localStorage.getItem('crm_staff_pwd') || 'staff123';
+  if(pwd.toLowerCase() === bossPwd.toLowerCase()) {
+    currentRole = 'boss';
+  } else if(pwd.toLowerCase() === staffPwd.toLowerCase()) {
+    currentRole = 'staff';
+  } else {
+    document.getElementById('login-error').textContent = '❌ 密码错误，请重试';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-password').focus();
+    return;
+  }
+  sessionStorage.setItem('crm_role', currentRole);
+  document.getElementById('login-screen').style.display = 'none';
+  await initDB();
+}
+
+function logout() {
+  if(!confirm('确定退出登录？')) return;
+  sessionStorage.removeItem('crm_role');
+  currentRole = null;
+  location.reload();
+}
+
+// ===== STATE =====
+let currentPage = 'dashboard';
+let currentFilter = 'all';
+let editingId = null;
+let formAddons = [];
+let backPage = 'customers';
+
+// ===== SUPABASE =====
+const SUPABASE_URL = 'https://haadzqsaprnkiclggvdd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_RsrTVHusJgcA5BStW5QqZg_q4RYjuAs';
+
+// 内置 Supabase REST 客户端 — 不依赖 CDN
+class _SBQuery {
+  constructor(table){this._t=table;this._f=[];this._ord=null;this._cols='*';this._mode='select';this._data=null;}
+  select(c){if(this._mode!=='insert')this._cols=c||'*';return this;}
+  order(col,o={}){this._ord=col+(o.ascending===false?'.desc':'.asc');return this;}
+  eq(c,v){this._f.push(`${c}=eq.${encodeURIComponent(v)}`);return this;}
+  gte(c,v){this._f.push(`${c}=gte.${v}`);return this;}
+  lte(c,v){this._f.push(`${c}=lte.${v}`);return this;}
+  is(c,v){this._f.push(`${c}=is.${v}`);return this;}
+  insert(rows){this._mode='insert';this._data=Array.isArray(rows)?rows:[rows];return this;}
+  update(obj){this._mode='update';this._data=obj;return this;}
+  delete(){this._mode='delete';return this;}
+  upsert(rows){this._mode='upsert';this._data=Array.isArray(rows)?rows:[rows];return this;}
+  _h(extra={}){return{apikey:SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...extra};}
+  _filterUrl(){return this._f.length?this._f.join('&'):'';}
+  async _run(){
+    const base=`${SUPABASE_URL}/rest/v1/${this._t}`;
+    try{
+      if(this._mode==='select'){
+        let q=`select=${this._cols}`;
+        if(this._f.length)q+='&'+this._filterUrl();
+        if(this._ord)q+=`&order=${this._ord}`;
+        const r=await fetch(`${base}?${q}`,{headers:this._h()});
+        const d=await r.json();
+        return{data:r.ok?d:null,error:r.ok?null:d};
+      }
+      if(this._mode==='insert'){
+        const r=await fetch(base,{method:'POST',headers:this._h({Prefer:'return=representation'}),body:JSON.stringify(this._data)});
+        const d=await r.json();
+        return{data:r.ok?(Array.isArray(d)?d:[d]):null,error:r.ok?null:d};
+      }
+      if(this._mode==='update'){
+        const q=this._filterUrl();
+        const r=await fetch(`${base}?${q}`,{method:'PATCH',headers:this._h({Prefer:'return=representation'}),body:JSON.stringify(this._data)});
+        const t=await r.text();
+        return{data:r.ok&&t?JSON.parse(t):null,error:r.ok?null:t};
+      }
+      if(this._mode==='delete'){
+        const q=this._filterUrl();
+        const r=await fetch(`${base}?${q}`,{method:'DELETE',headers:this._h()});
+        return{data:null,error:r.ok?null:await r.text()};
+      }
+      if(this._mode==='upsert'){
+        const r=await fetch(base,{method:'POST',headers:this._h({Prefer:'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(this._data)});
+        const d=await r.json();
+        return{data:r.ok?d:null,error:r.ok?null:d};
+      }
+    }catch(e){return{data:null,error:e};}
+  }
+  then(res,rej){return this._run().then(res,rej);}
+}
+const sb={from:t=>new _SBQuery(t)};
+
+let clientsCache = [];
+let ratesCache = [];
+
+function getClients() { return clientsCache; }
+function getRates() { return ratesCache; }
+
+async function initDB() {
+  showLoading(true);
+  try {
+    const [cr, rr] = await Promise.all([
+      sb.from('clients').select('*').order('sort_order', {ascending: false}),
+      sb.from('exchange_rates').select('*').order('date', {ascending: false})
+    ]);
+    if(cr.data) clientsCache = cr.data;
+    if(rr.data) ratesCache = rr.data;
+  } catch(e) { console.error('DB init error', e); }
+  showLoading(false);
+  refreshDashboard();
+}
+
+function showLoading(v) {
+  const el = document.getElementById('loading-overlay');
+  if(el) el.style.display = v ? 'flex' : 'none';
+}
+
+function uuid() { return crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).substr(2); }
+function fmtDate(d) { if(!d) return '—'; try { const [y,m,dd]=d.split('-'); return `${dd}/${m}/${y}`; } catch { return d; } }
+function fmtMYR(n) { return 'MYR '+(parseFloat(n)||0).toFixed(2); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function daysLeft(d) { if(!d) return null; const diff = Math.ceil((new Date(d)-new Date(today()))/(86400000)); return diff; }
+
+// ===== NAVIGATION =====
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  const nb = document.getElementById('nav-'+p);
+  if(nb) nb.classList.add('active');
+  currentPage = p;
+  if(p==='dashboard') refreshDashboard();
+  if(p==='customers') loadCustomers();
+  if(p==='exchange') loadExchange();
+  if(p==='archive') loadArchive();
+  if(p==='settings') loadSettings();
+  window.scrollTo(0,0);
+}
+function goBack() { showPage(backPage); }
+
+// ===== DASHBOARD =====
+function refreshDashboard() {
+  const clients = getClients().filter(c=>!c.is_archived);
+  const tod = today();
+  const now = new Date();
+  const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
+  const mStart = `${y}-${m}-01`;
+  const mEnd = `${y}-${m}-31`;
+  const in30 = new Date(now); in30.setDate(in30.getDate()+30); const in30s = in30.toISOString().split('T')[0];
+  const in90 = new Date(now); in90.setDate(in90.getDate()+90); const in90s = in90.toISOString().split('T')[0];
+
+  const todayC = clients.filter(c=>c.created_at&&c.created_at.startsWith(tod));
+  const todayDeals = todayC.length;
+  const todayProfit = todayC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+  const monthC = clients.filter(c=>c.created_at&&c.created_at>=mStart&&c.created_at<=mEnd);
+  const monthRev = monthC.reduce((s,c)=>s+(parseFloat(c.actual_myr)||0),0);
+  const monthProfit = monthC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+  const pendingApproval = clients.filter(c=>c.status==='等待批文').length;
+  const pendingFollow = clients.filter(c=>c.status==='提交资料').length;
+  const pendingPay = clients.filter(c=>(parseFloat(c.balance_due)||0)>0).length;
+  const notAttended = clients.filter(c=>c.approval_date&&!c.visa_attended).length;
+  const expToday = clients.filter(c=>c.expiry_date===tod).length;
+  const exp30 = clients.filter(c=>c.expiry_date&&c.expiry_date>tod&&c.expiry_date<=in30s).length;
+  const exp90 = clients.filter(c=>c.expiry_date&&c.expiry_date>tod&&c.expiry_date<=in90s).length;
+
+  const pStats = PERSONS.map(name=>{
+    const pc = monthC.filter(c=>c.responsible_person===name);
+    const rev = pc.reduce((s,c)=>s+(parseFloat(c.actual_myr)||0),0);
+    const prf = pc.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+    return {name, deals:pc.length, rev, prf};
+  }).sort((a,b)=>b.deals-a.deals);
+
+  const rankColors = ['#f59e0b','#9ca3af','#f97316','#60a5fa'];
+
+  document.getElementById('dashboard-content').innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:12px;color:#9ca3af">📅 今日 ${tod}</span>
+        <span style="font-size:11px;color:#d1d5db">活跃客户 ${clients.length} 人</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="background:#eff6ff;border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:#6b7280">今日成交</div>
+          <div style="font-size:30px;font-weight:700;color:#2563eb;margin:4px 0 2px">${todayDeals}</div>
+          <div style="font-size:11px;color:#9ca3af">笔</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:14px">
+          <div style="font-size:11px;color:#6b7280">今日利润</div>
+          <div style="font-size:24px;font-weight:700;color:#16a34a;margin:4px 0 2px">${isBoss()?todayProfit.toFixed(0):'—'}</div>
+          <div style="font-size:11px;color:#9ca3af">MYR</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:10px">📊 本月 ${y}-${m}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#6b7280">客户数</div>
+          <div style="font-size:26px;font-weight:700;color:#2563eb">${monthC.length}</div>
+          <div style="font-size:10px;color:#9ca3af">笔</div>
+        </div>
+        <div style="text-align:center;border-left:1px solid #f3f4f6;border-right:1px solid #f3f4f6">
+          <div style="font-size:11px;color:#6b7280">营业额</div>
+          <div style="font-size:20px;font-weight:700;color:#2563eb">${(monthRev/1000).toFixed(1)}K</div>
+          <div style="font-size:10px;color:#9ca3af">MYR</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:11px;color:#6b7280">利润</div>
+          <div style="font-size:20px;font-weight:700;color:#16a34a">${isBoss()?(monthProfit/1000).toFixed(1)+'K':'—'}</div>
+          <div style="font-size:10px;color:#9ca3af">MYR</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">待处理</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="filterByStatus('提交资料')" style="background:#eff6ff;border:none;border-radius:10px;padding:12px;text-align:left;cursor:pointer">
+          <div style="font-size:11px;color:#6b7280">待跟进</div>
+          <div style="font-size:28px;font-weight:700;color:#3b82f6;margin:4px 0 2px">${pendingFollow}</div>
+          <div style="font-size:11px;color:#9ca3af">笔 →</div>
+        </button>
+        <button onclick="filterByStatus('等待批文')" style="background:#fffbeb;border:none;border-radius:10px;padding:12px;text-align:left;cursor:pointer">
+          <div style="font-size:11px;color:#6b7280">等待批文</div>
+          <div style="font-size:28px;font-weight:700;color:#f59e0b;margin:4px 0 2px">${pendingApproval}</div>
+          <div style="font-size:11px;color:#9ca3af">笔 →</div>
+        </button>
+        <button onclick="filterByPendingPay()" style="background:#fff5f5;border:none;border-radius:10px;padding:12px;text-align:left;cursor:pointer">
+          <div style="font-size:11px;color:#6b7280">等待付款</div>
+          <div style="font-size:28px;font-weight:700;color:#ef4444;margin:4px 0 2px">${pendingPay}</div>
+          <div style="font-size:11px;color:#9ca3af">笔 →</div>
+        </button>
+        <button onclick="setTabAndShow('未上签')" style="background:#f5f3ff;border:none;border-radius:10px;padding:12px;text-align:left;cursor:pointer">
+          <div style="font-size:11px;color:#6b7280">未上签证</div>
+          <div style="font-size:28px;font-weight:700;color:#7c3aed;margin:4px 0 2px">${notAttended}</div>
+          <div style="font-size:11px;color:#9ca3af">笔 →</div>
+        </button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">到期提醒</div>
+      <button onclick="filterByExpiry('today')" style="width:100%;background:#fff5f5;border:none;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px">
+        <span style="font-size:13px;color:#374151">今日到期</span>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px;font-weight:700;color:#ef4444">${expToday}</span><span style="font-size:11px;color:#9ca3af">笔 ›</span></div>
+      </button>
+      <button onclick="filterByExpiry('30')" style="width:100%;background:#fff8f0;border:none;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-bottom:6px">
+        <span style="font-size:13px;color:#374151">30天内到期</span>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px;font-weight:700;color:#f97316">${exp30}</span><span style="font-size:11px;color:#9ca3af">笔 ›</span></div>
+      </button>
+      <button onclick="filterByExpiry('90')" style="width:100%;background:#fefce8;border:none;border-radius:10px;padding:12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+        <span style="font-size:13px;color:#374151">90天内到期</span>
+        <div style="display:flex;align-items:center;gap:6px"><span style="font-size:20px;font-weight:700;color:#ca8a04">${exp90}</span><span style="font-size:11px;color:#9ca3af">笔 ›</span></div>
+      </button>
+    </div>
+    <div class="card">
+      <div class="section-title">负责人排行（本月）</div>
+      ${pStats.map((p,i)=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f9fafb">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:28px;height:28px;border-radius:50%;background:${rankColors[i]||'#e5e7eb'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${i+1}</div>
+            <span style="font-weight:500;color:#374151">${p.name}</span>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;font-weight:600;color:#374151">${p.deals} 笔</div>
+            ${isBoss()?`<div style="font-size:11px;color:#9ca3af">MYR ${p.rev.toFixed(2)}</div>`:''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function filterByStatus(s) { currentFilter=s; showPage('customers'); }
+function filterByExpiry(t) { currentFilter='expiry_'+t; showPage('customers'); }
+function filterByPendingPay() { currentFilter='pending_pay'; showPage('customers'); }
+function setTabAndShow(filter) {
+  currentFilter = filter;
+  showPage('customers');
+  // Activate the correct tab
+  setTimeout(()=>{
+    document.querySelectorAll('#status-tabs .tab').forEach(t=>t.classList.remove('active'));
+    const tabs = document.querySelectorAll('#status-tabs .tab');
+    tabs.forEach(t=>{ if(t.getAttribute('data-filter')===filter) t.classList.add('active'); });
+  }, 100);
+}
+
+// ===== CUSTOMERS =====
+function loadCustomers() {
+  const all = getClients().filter(c=>!c.is_archived);
+  renderCustomers(all);
+}
+
+let _allClients = [];
+function renderCustomers(all) {
+  _allClients = all;
+  filterCustomers();
+}
+
+function setTab(el, filter) {
+  document.querySelectorAll('#status-tabs .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = filter;
+  filterCustomers();
+}
+
+function filterCustomers() {
+  const all = getClients().filter(c=>!c.is_archived);
+  const search = (document.getElementById('search-input')||{}).value?.toLowerCase()||'';
+  const tod = today();
+  const in30 = new Date(); in30.setDate(in30.getDate()+30); const in30s=in30.toISOString().split('T')[0];
+  const in90 = new Date(); in90.setDate(in90.getDate()+90); const in90s=in90.toISOString().split('T')[0];
+
+  let filtered = all;
+  if(currentFilter==='pending_pay') filtered=all.filter(c=>(parseFloat(c.balance_due)||0)>0);
+  else if(currentFilter==='expiry_today') filtered=all.filter(c=>c.expiry_date===tod);
+  else if(currentFilter==='expiry_30') filtered=all.filter(c=>c.expiry_date&&c.expiry_date>tod&&c.expiry_date<=in30s);
+  else if(currentFilter==='expiry_90') filtered=all.filter(c=>c.expiry_date&&c.expiry_date>tod&&c.expiry_date<=in90s);
+  else if(currentFilter==='已上签') filtered=all.filter(c=>c.visa_attended===true);
+  else if(currentFilter==='未上签') filtered=all.filter(c=>!c.visa_attended&&c.approval_date);
+  else if(currentFilter&&currentFilter!=='all') filtered=all.filter(c=>c.status===currentFilter);
+
+  if(search) filtered=filtered.filter(c=>
+    (c.name||'').toLowerCase().includes(search)||
+    (c.passport_no||'').toLowerCase().includes(search)||
+    (c.phone||'').toLowerCase().includes(search)||
+    (c.wechat||'').toLowerCase().includes(search)||
+    (c.client_group||'').toLowerCase().includes(search)||
+    (c.agent_name||'').toLowerCase().includes(search)||
+    (c.application_type||'').toLowerCase().includes(search)||
+    (c.responsible_person||'').toLowerCase().includes(search)
+  );
+
+  const el = document.getElementById('customers-list');
+  if(!filtered.length) { el.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:8px">📋</div><p style="font-size:14px">没有找到客户</p></div>'; return; }
+
+  el.innerHTML = filtered.map(c=>{
+    const days = daysLeft(c.expiry_date);
+    const dayStr = days!==null ? ` · ${days}天` : '';
+    const expClass = days!==null&&days<=30 ? 'color:#ef4444;font-weight:600' : 'color:#9ca3af';
+    const profit = parseFloat(c.profit||0);
+    const hasPending = (parseFloat(c.balance_due)||0)>0;
+    const wa = c.phone ? c.phone.replace(/\D/g,'') : '';
+    return `<div class="client-card" data-id="${c.id}">
+      <span class="drag-handle" onclick="event.stopPropagation()">⠿</span>
+      <div onclick="showDetail('${c.id}')" style="cursor:pointer">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-weight:700;color:#1f2937;font-size:15px">${esc(c.name)}</span>
+            ${c.gender?`<span style="font-size:11px;padding:1px 6px;border-radius:4px;${c.gender==='男'?'background:#dbeafe;color:#1d4ed8':'background:#fce7f3;color:#be185d'}">${c.gender}</span>`:''}
+            ${hasPending?`<span style="font-size:10px;background:#fef3c7;color:#d97706;padding:1px 5px;border-radius:4px">待付</span>`:''}
+          </div>
+          <span class="badge badge-${c.status}">${c.status}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:2px">📋 ${esc(c.application_type||'—')}</div>
+            <div style="font-size:11px;color:#9ca3af">${esc(c.passport_no||'—')} · ${c.responsible_person||'—'}</div>
+            ${c.expiry_date?`<div style="font-size:11px;margin-top:3px;${expClass}">⏰ 到期: ${fmtDate(c.expiry_date)}${dayStr}</div>`:''}
+          </div>
+          <div style="text-align:right;margin-left:10px;flex-shrink:0">
+            ${isBoss()&&c.actual_myr?`<div style="font-size:12px;color:#6b7280">MYR ${parseFloat(c.actual_myr).toFixed(0)}</div>`:''}
+            ${isBoss()&&c.profit?`<div style="font-size:12px;font-weight:600;${profit>=0?'color:#16a34a':'color:#ef4444'}">利润 ${profit.toFixed(0)}</div>`:''}
+          </div>
+        </div>
+      </div>
+      ${wa?`<a href="https://wa.me/${wa}" target="_blank" onclick="event.stopPropagation()" style="position:absolute;bottom:12px;right:14px;background:#25D366;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 2px 6px rgba(37,211,102,0.4)">
+        <svg style="width:16px;height:16px" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.145.569 4.16 1.563 5.9L0 24l6.301-1.539A11.947 11.947 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.6a9.558 9.558 0 01-4.908-1.348l-.352-.21-3.642.89.921-3.545-.23-.363A9.565 9.565 0 012.4 12c0-5.295 4.305-9.6 9.6-9.6s9.6 4.305 9.6 9.6-4.305 9.6-9.6 9.6z"/></svg>
+      </a>`:''}
+    </div>`;
+  }).join('');
+
+  // Init drag-to-reorder
+  if(window.Sortable) {
+    new Sortable(el, {
+      handle: '.drag-handle',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: async function(evt) {
+        // Build new order from DOM
+        const cards = [...el.querySelectorAll('[data-id]')];
+        const updates = cards.map((card, i) => ({
+          id: card.dataset.id,
+          sort_order: cards.length - i  // higher = earlier in desc order
+        }));
+        // Update cache order
+        const newOrder = updates.map(u => clientsCache.find(c=>c.id===u.id)).filter(Boolean);
+        clientsCache = [...newOrder, ...clientsCache.filter(c=>!newOrder.find(n=>n.id===c.id))];
+        // Save to Supabase in background
+        for(const u of updates) {
+          sb.from('clients').update({sort_order: u.sort_order}).eq('id', u.id).then(()=>{});
+        }
+      }
+    });
+  }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ===== DETAIL =====
+function showDetail(id) {
+  backPage = currentPage;
+  const c = getClients().find(x=>x.id===id);
+  if(!c) return;
+  document.getElementById('detail-name').textContent = c.name;
+  document.getElementById('detail-status-badge').innerHTML = `<span class="badge badge-${c.status}">${c.status}</span>`;
+  document.getElementById('detail-edit-btn').onclick = ()=>showForm(id);
+
+  const days = daysLeft(c.expiry_date);
+  const expStr = c.expiry_date ? `${fmtDate(c.expiry_date)}${days!==null?` (${days}天)`:''}` : '—';
+  const addons = c.addons||[];
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="card">
+      <div class="section-title">基本资料</div>
+      <div class="row"><span class="row-label">姓名</span><span class="row-value" style="font-weight:600">${esc(c.name)}</span></div>
+      <div class="row"><span class="row-label">性别</span><span class="row-value">${c.gender||'—'}</span></div>
+      <div class="row"><span class="row-label">国籍</span><span class="row-value">${esc(c.nationality||'—')}</span></div>
+      <div class="row"><span class="row-label">护照号码</span><span class="row-value" style="font-weight:600;font-family:monospace">${esc(c.passport_no||'—')}</span></div>
+      <div class="row"><span class="row-label">出生日期</span><span class="row-value">${fmtDate(c.date_of_birth)}</span></div>
+      <div class="row"><span class="row-label">电话</span><span class="row-value" style="display:flex;align-items:center;justify-content:flex-end;gap:8px">${esc(c.phone||'—')}${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" style="background:#25D366;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;text-decoration:none;white-space:nowrap">WhatsApp</a>`:''}</span></div>
+      <div class="row"><span class="row-label">微信</span><span class="row-value">${esc(c.wechat||'—')}</span></div>
+      <div class="row"><span class="row-label">客户群</span><span class="row-value">${esc(c.client_group||'—')}</span></div>
+      <div class="row"><span class="row-label">代理名字</span><span class="row-value">${esc(c.agent_name||'—')}</span></div>
+      ${c.notes?`<div class="row"><span class="row-label">备注</span><span class="row-value">${esc(c.notes)}</span></div>`:''}
+    </div>
+    <div class="card">
+      <div class="section-title">申请信息</div>
+      <div class="row"><span class="row-label">负责人</span><span class="row-value">${c.responsible_person||'—'}</span></div>
+      <div class="row"><span class="row-label">申请项目</span><span class="row-value">${esc(c.application_type||'—')}</span></div>
+      <div class="row"><span class="row-label">处理状态</span><span class="row-value"><span class="badge badge-${c.status}">${c.status}</span></span></div>
+      <div class="row"><span class="row-label">提交日期</span><span class="row-value">${fmtDate(c.submission_date)}</span></div>
+      <div class="row"><span class="row-label">批文日期</span><span class="row-value" style="${c.approval_date?'color:#7c3aed;font-weight:500':''}">${fmtDate(c.approval_date)}</span></div>
+      <div class="row"><span class="row-label">贴签日期</span><span class="row-value">${fmtDate(c.visa_sticker_date)}</span></div>
+      <div class="row"><span class="row-label">到期日期</span><span class="row-value" style="${days!==null&&days<=30?'color:#ef4444;font-weight:500':''}">${expStr}</span></div>
+      <div class="row"><span class="row-label">已上签证</span><span class="row-value">${c.visa_attended?'✅ 是':'否'}</span></div>
+      ${c.visa_attended?`<div class="row"><span class="row-label">上签证日期</span><span class="row-value">${fmtDate(c.visa_attended_date)}</span></div>`:''}
+    </div>
+    <div class="card">
+      <div class="section-title">财务资料</div>
+      <div class="row"><span class="row-label">付款币种</span><span class="row-value">${c.currency||'MYR'}</span></div>
+      <div class="row"><span class="row-label">收款金额</span><span class="row-value">${c.currency||'MYR'} ${parseFloat(c.collection_amount||0).toFixed(2)}</span></div>
+      <div class="row"><span class="row-label">实际MYR</span><span class="row-value" style="font-weight:600">${fmtMYR(c.actual_myr)}</span></div>
+      <div class="row"><span class="row-label">Deposit</span><span class="row-value">${fmtMYR(c.deposit)}</span></div>
+      <div class="row"><span class="row-label">尾款</span><span class="row-value" style="${(parseFloat(c.balance_due)||0)>0?'color:#f59e0b;font-weight:500':''}">${fmtMYR(c.balance_due)}</span></div>
+      ${isBoss()?`
+      <div class="row"><span class="row-label">本钱</span><span class="row-value">${fmtMYR(c.cost)}</span></div>
+      <div class="row"><span class="row-label">代理佣金</span><span class="row-value">${fmtMYR(c.agent_commission)}</span></div>
+      <div class="row"><span class="row-label">额外收入</span><span class="row-value">${fmtMYR(c.extra_income)}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #f3f4f6">
+        <span style="font-size:14px;font-weight:600;color:#374151">公司利润</span>
+        <span style="font-size:22px;font-weight:700;${parseFloat(c.profit||0)>=0?'color:#16a34a':'color:#ef4444'}">${fmtMYR(c.profit)}</span>
+      </div>`:''}
+    </div>
+    ${addons.length?`<div class="card">
+      <div class="section-title">追加项目 (${addons.length})</div>
+      ${addons.map(a=>`<div class="addon-box">
+        <div style="font-weight:500;color:#374151;margin-bottom:6px">${esc(a.addon_type)}</div>
+        <div style="display:flex;gap:12px">
+          <span style="font-size:12px;color:#6b7280">价格: MYR ${parseFloat(a.price||0).toFixed(2)}</span>
+          <span style="font-size:12px;color:#6b7280">本钱: MYR ${parseFloat(a.cost||0).toFixed(2)}</span>
+          <span style="font-size:12px;color:#6b7280">代理: MYR ${parseFloat(a.agent_price||0).toFixed(2)}</span>
+        </div>
+        ${a.notes?`<div style="font-size:12px;color:#9ca3af;margin-top:4px">${esc(a.notes)}</div>`:''}
+      </div>`).join('')}
+    </div>`:''}
+    ${c.status==='完成'&&!c.is_archived?`<button onclick="archiveClient('${c.id}')" style="width:100%;background:#f3f4f6;border:none;border-radius:10px;padding:12px;font-size:14px;color:#6b7280;cursor:pointer;margin-bottom:8px">📦 归档此客户</button>`:''}
+    ${isBoss()?`<button onclick="deleteClient('${c.id}')" style="width:100%;background:#fff0f0;border:1px solid #fecaca;border-radius:10px;padding:12px;font-size:14px;color:#dc2626;cursor:pointer;margin-bottom:8px">🗑️ 删除此客户</button>`:''}
+    <p style="text-align:center;font-size:11px;color:#d1d5db;padding:8px">创建: ${fmtDate(c.created_at?.split('T')[0]||c.created_at)}</p>
+  `;
+  showPage('detail');
+}
+
+async function archiveClient(id) {
+  if(!confirm('确定归档？归档后资料保留，可在归档区查看。')) return;
+  const archivedAt = new Date().toISOString().split('T')[0];
+  showLoading(true);
+  await sb.from('clients').update({is_archived:true, archived_at:archivedAt}).eq('id',id);
+  const i = clientsCache.findIndex(c=>c.id===id);
+  if(i>=0) { clientsCache[i].is_archived=true; clientsCache[i].archived_at=archivedAt; }
+  showLoading(false);
+  autoSync();
+  showPage('archive');
+}
+
+async function deleteClient(id) {
+  if(!confirm('⚠️ 确定永久删除？删除后无法恢复！')) return;
+  if(!confirm('再次确认：永久删除此客户所有资料？')) return;
+  showLoading(true);
+  await sb.from('clients').delete().eq('id',id);
+  clientsCache = clientsCache.filter(c=>c.id!==id);
+  showLoading(false);
+  autoSync();
+  showPage('customers');
+  loadCustomers();
+}
+
+// ===== FORM =====
+function showForm(id) {
+  editingId = id;
+  formAddons = [];
+  backPage = id ? 'detail' : currentPage;
+  document.getElementById('form-title').textContent = id ? '编辑客户' : '新增客户';
+
+  let c = {};
+  if(id) { c = getClients().find(x=>x.id===id)||{}; formAddons = JSON.parse(JSON.stringify(c.addons||[])); }
+
+  // Calc rates display
+  const rates = getRates();
+  const latestRate = rates[0]||{rmb_rate:0,usdt_rate:0};
+
+  const appOptions = APP_TYPES.map(t=>`<option value="${t}" ${c.application_type===t?'selected':''}>${t}</option>`).join('');
+  const personOpts = PERSONS.map(p=>`<option value="${p}" ${c.responsible_person===p?'selected':''}>${p}</option>`).join('');
+  const statusOpts = STATUSES.map(s=>`<option value="${s}" ${(c.status||'提交资料')===s?'selected':''}>${s}</option>`).join('');
+  const currOpts = ['MYR','RMB','USDT'].map(x=>`<option value="${x}" ${(c.currency||'MYR')===x?'selected':''}>${x}</option>`).join('');
+
+  document.getElementById('form-content').innerHTML = `
+    <div class="card">
+      <div class="section-title">基本资料</div>
+      <div style="margin-bottom:10px"><label class="field-label">客户姓名 *</label><input id="f-name" value="${esc(c.name||'')}" placeholder="请输入姓名"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">性别</label>
+          <select id="f-gender"><option value="">—</option><option value="男" ${c.gender==='男'?'selected':''}>男</option><option value="女" ${c.gender==='女'?'selected':''}>女</option></select>
+        </div>
+        <div><label class="field-label">国籍</label><input id="f-nationality" value="${esc(c.nationality||'')}" placeholder="国籍"></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="field-label">护照号码</label><input id="f-passport" value="${esc(c.passport_no||'')}" placeholder="护照号码"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">出生日期</label><input type="date" id="f-dob" value="${c.date_of_birth||''}"></div>
+        <div><label class="field-label">客户群</label><input id="f-group" value="${esc(c.client_group||'')}" placeholder="客户群"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">电话</label><input id="f-phone" value="${esc(c.phone||'')}" placeholder="电话"></div>
+        <div><label class="field-label">微信</label><input id="f-wechat" value="${esc(c.wechat||'')}" placeholder="微信"></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="field-label">代理名字</label><input id="f-agent" value="${esc(c.agent_name||'')}" placeholder="代理名字"></div>
+      <div><label class="field-label">备注</label><textarea id="f-notes" rows="2" placeholder="备注">${esc(c.notes||'')}</textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">申请信息</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">负责人</label><select id="f-person"><option value="">—</option>${personOpts}</select></div>
+        <div><label class="field-label">申请项目</label><select id="f-apptype"><option value="">—</option>${appOptions}</select></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="field-label">处理状态</label><select id="f-status">${statusOpts}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">提交日期</label><input type="date" id="f-submit" value="${c.submission_date||today()}"></div>
+        <div><label class="field-label">批文日期</label><input type="date" id="f-approval" value="${c.approval_date||''}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">贴签日期</label><input type="date" id="f-sticker" value="${c.visa_sticker_date||''}"></div>
+        <div><label class="field-label">到期日期</label><input type="date" id="f-expiry" value="${c.expiry_date||''}"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="field-label">已上签证</label>
+          <select id="f-attended"><option value="false" ${!c.visa_attended?'selected':''}>否</option><option value="true" ${c.visa_attended?'selected':''}>是</option></select>
+        </div>
+        <div><label class="field-label">上签证日期</label><input type="date" id="f-attended-date" value="${c.visa_attended_date||''}"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">财务资料</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">付款币种</label><select id="f-currency" onchange="calcMYR()">${currOpts}</select></div>
+        <div><label class="field-label">收款金额</label><input type="number" step="0.01" id="f-amount" value="${c.collection_amount||''}" placeholder="0.00" oninput="calcMYR()"></div>
+      </div>
+      <div id="f-myr-display" style="background:#eff6ff;border-radius:8px;padding:10px;margin-bottom:10px">
+        <div style="font-size:11px;color:#6b7280">实际收款 MYR（自动）</div>
+        <div id="f-myr-val" style="font-size:18px;font-weight:700;color:#1d4ed8">MYR ${parseFloat(c.actual_myr||0).toFixed(2)}</div>
+        <div style="font-size:11px;color:#9ca3af">汇率: RMB ${latestRate.rmb_rate||'—'} / USDT ${latestRate.usdt_rate||'—'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">Deposit (MYR)</label><input type="number" step="0.01" id="f-deposit" value="${c.deposit||''}" placeholder="0.00" oninput="calcProfit()"></div>
+        <div><label class="field-label">尾款 (MYR)</label><input type="number" step="0.01" id="f-balance" value="${c.balance_due||''}" placeholder="0.00"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="field-label">本钱 (MYR)</label><input type="number" step="0.01" id="f-cost" value="${c.cost||''}" placeholder="0.00" oninput="calcProfit()"></div>
+        <div><label class="field-label">代理佣金 (MYR)</label><input type="number" step="0.01" id="f-commission" value="${c.agent_commission||''}" placeholder="0.00" oninput="calcProfit()"></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="field-label">额外收入 (MYR)</label><input type="number" step="0.01" id="f-extra" value="${c.extra_income||''}" placeholder="0.00" oninput="calcProfit()"></div>
+      <div id="f-profit-display" style="background:#f0fdf4;border-radius:8px;padding:10px">
+        <div style="font-size:11px;color:#6b7280">公司利润（自动计算）</div>
+        <div id="f-profit-val" style="font-size:20px;font-weight:700;color:#16a34a">MYR ${parseFloat(c.profit||0).toFixed(2)}</div>
+        <div style="font-size:11px;color:#9ca3af">= 实际收款 + 额外收入 - 本钱 - 佣金</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">追加项目</div>
+      <div id="addons-list"></div>
+      <button onclick="addAddon()" style="width:100%;border:1.5px dashed #93c5fd;background:none;border-radius:8px;padding:10px;font-size:13px;color:#3b82f6;cursor:pointer">+ 添加追加项目</button>
+    </div>
+
+    <div id="form-error" style="background:#fff5f5;color:#dc2626;font-size:13px;padding:10px;border-radius:8px;display:none;margin-bottom:8px"></div>
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:16px">
+      <button class="btn-secondary" onclick="goBack()">取消</button>
+      <button class="btn-primary" onclick="saveClient()">💾 保存</button>
+    </div>
+  `;
+  renderAddons();
+  showPage('form');
+}
+
+function renderAddons() {
+  const addonOpts = ADDON_TYPES.map(t=>`<option value="${t}">${t}</option>`).join('');
+  document.getElementById('addons-list').innerHTML = formAddons.map((a,i)=>`
+    <div class="addon-box" id="addon-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:12px;color:#6b7280;font-weight:500">追加 ${i+1}</span>
+        <button onclick="removeAddon(${i})" style="background:none;border:none;color:#f87171;font-size:12px;cursor:pointer">删除</button>
+      </div>
+      <select onchange="formAddons[${i}].addon_type=this.value" style="margin-bottom:8px">
+        <option value="">— 选择类型 —</option>
+        ${ADDON_TYPES.map(t=>`<option value="${t}" ${a.addon_type===t?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div><label class="field-label">价格</label><input type="number" step="0.01" value="${a.price||''}" placeholder="0" oninput="formAddons[${i}].price=this.value"></div>
+        <div><label class="field-label">本钱</label><input type="number" step="0.01" value="${a.cost||''}" placeholder="0" oninput="formAddons[${i}].cost=this.value"></div>
+        <div><label class="field-label">代理价</label><input type="number" step="0.01" value="${a.agent_price||''}" placeholder="0" oninput="formAddons[${i}].agent_price=this.value"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function addAddon() { formAddons.push({addon_type:'',price:'',cost:'',agent_price:'',notes:''}); renderAddons(); }
+function removeAddon(i) { formAddons.splice(i,1); renderAddons(); }
+
+function calcMYR() {
+  const rates = getRates();
+  const rate = rates[0]||{rmb_rate:0,usdt_rate:0};
+  const curr = document.getElementById('f-currency')?.value||'MYR';
+  const amt = parseFloat(document.getElementById('f-amount')?.value)||0;
+  let myr = amt;
+  if(curr==='RMB') myr = rate.rmb_rate>0 ? amt/rate.rmb_rate : 0;
+  if(curr==='USDT') myr = amt*rate.usdt_rate;
+  document.getElementById('f-myr-val').textContent = 'MYR '+myr.toFixed(2);
+  calcProfit();
+}
+
+function calcProfit() {
+  const rates = getRates();
+  const rate = rates[0]||{rmb_rate:0,usdt_rate:0};
+  const curr = document.getElementById('f-currency')?.value||'MYR';
+  const amt = parseFloat(document.getElementById('f-amount')?.value)||0;
+  let myr = amt;
+  if(curr==='RMB') myr = rate.rmb_rate>0 ? amt/rate.rmb_rate : 0;
+  if(curr==='USDT') myr = amt*rate.usdt_rate;
+  const extra = parseFloat(document.getElementById('f-extra')?.value)||0;
+  const cost = parseFloat(document.getElementById('f-cost')?.value)||0;
+  const comm = parseFloat(document.getElementById('f-commission')?.value)||0;
+  const profit = myr+extra-cost-comm;
+  const el = document.getElementById('f-profit-val');
+  if(el) { el.textContent='MYR '+profit.toFixed(2); el.style.color=profit>=0?'#16a34a':'#ef4444'; }
+}
+
+async function saveClient() {
+  const name = document.getElementById('f-name')?.value?.trim();
+  if(!name) { showFormError('请填写客户姓名'); return; }
+
+  const rates = getRates();
+  const rate = rates[0]||{rmb_rate:0,usdt_rate:0};
+  const curr = document.getElementById('f-currency')?.value||'MYR';
+  const amt = parseFloat(document.getElementById('f-amount')?.value)||0;
+  let myr = amt;
+  if(curr==='RMB') myr = rate.rmb_rate>0 ? amt/rate.rmb_rate : 0;
+  if(curr==='USDT') myr = amt*rate.usdt_rate;
+  const extra = parseFloat(document.getElementById('f-extra')?.value)||0;
+  const cost = parseFloat(document.getElementById('f-cost')?.value)||0;
+  const comm = parseFloat(document.getElementById('f-commission')?.value)||0;
+  const profit = myr+extra-cost-comm;
+
+  const now = new Date().toISOString();
+  const data = {
+    name, gender: document.getElementById('f-gender')?.value||'',
+    nationality: document.getElementById('f-nationality')?.value||'',
+    passport_no: document.getElementById('f-passport')?.value||'',
+    date_of_birth: document.getElementById('f-dob')?.value||'',
+    phone: document.getElementById('f-phone')?.value||'',
+    wechat: document.getElementById('f-wechat')?.value||'',
+    client_group: document.getElementById('f-group')?.value||'',
+    agent_name: document.getElementById('f-agent')?.value||'',
+    notes: document.getElementById('f-notes')?.value||'',
+    responsible_person: document.getElementById('f-person')?.value||'',
+    application_type: document.getElementById('f-apptype')?.value||'',
+    status: document.getElementById('f-status')?.value||'提交资料',
+    submission_date: document.getElementById('f-submit')?.value||'',
+    approval_date: document.getElementById('f-approval')?.value||'',
+    visa_sticker_date: document.getElementById('f-sticker')?.value||'',
+    expiry_date: document.getElementById('f-expiry')?.value||'',
+    visa_attended: document.getElementById('f-attended')?.value==='true',
+    visa_attended_date: document.getElementById('f-attended-date')?.value||'',
+    currency: curr, collection_amount: amt, actual_myr: myr,
+    deposit: parseFloat(document.getElementById('f-deposit')?.value)||0,
+    balance_due: parseFloat(document.getElementById('f-balance')?.value)||0,
+    cost, agent_commission: comm, extra_income: extra, profit,
+    addons: formAddons.filter(a=>a.addon_type),
+    updated_at: now,
+  };
+
+  showLoading(true);
+  if(editingId) {
+    const {error} = await sb.from('clients').update(data).eq('id', editingId);
+    if(!error) {
+      const i = clientsCache.findIndex(c=>c.id===editingId);
+      if(i>=0) clientsCache[i]={...clientsCache[i],...data};
+    }
+    showLoading(false);
+    autoSync();
+    showDetail(editingId);
+  } else {
+    data.created_at = now;
+    data.is_archived = false;
+    const {data: newRow, error} = await sb.from('clients').insert(data).select().single();
+    showLoading(false);
+    if(!error && newRow) {
+      clientsCache.unshift(newRow);
+      autoSync();
+      showDetail(newRow.id);
+    } else {
+      showFormError('保存失败，请重试');
+    }
+  }
+}
+
+// ===== AUTO SYNC (Google Sheets - optional) =====
+async function autoSync() {
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec';
+  const url = localStorage.getItem('visa_sheet_url') || DEFAULT_SHEET_URL;
+  if(!url) return;
+  try {
+    const clients = getClients();
+    const rates = getRates();
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({type:'all',clients,rates}) });
+    const now = new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('visa_last_sync', now);
+  } catch(e) {}
+}
+
+function showFormError(msg) {
+  const el = document.getElementById('form-error');
+  if(el) { el.textContent=msg; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+}
+
+// ===== EXCHANGE =====
+function loadExchange() {
+  const today_str = today();
+  document.getElementById('rate-date').value = today_str;
+  const rates = getRates();
+  if(rates.length) {
+    const r = rates[0];
+    document.getElementById('cur-rmb').textContent = r.rmb_rate||'—';
+    document.getElementById('cur-usdt').textContent = r.usdt_rate||'—';
+    document.getElementById('rate-hint').style.display = 'none';
+  }
+  renderRateHistory();
+}
+
+async function saveRate() {
+  const date = document.getElementById('rate-date').value;
+  const rmb = parseFloat(document.getElementById('rate-rmb').value)||0;
+  const usdt = parseFloat(document.getElementById('rate-usdt').value)||0;
+  if(!rmb&&!usdt) { document.getElementById('rate-msg').textContent='请填写汇率'; return; }
+  showLoading(true);
+  const {error} = await sb.from('exchange_rates').upsert({date, rmb_rate:rmb, usdt_rate:usdt}, {onConflict:'date'});
+  if(!error) {
+    const i = ratesCache.findIndex(r=>r.date===date);
+    if(i>=0) ratesCache[i]={...ratesCache[i], rmb_rate:rmb, usdt_rate:usdt};
+    else ratesCache.unshift({date, rmb_rate:rmb, usdt_rate:usdt});
+    ratesCache.sort((a,b)=>b.date.localeCompare(a.date));
+  }
+  showLoading(false);
+  document.getElementById('cur-rmb').textContent=rmb||'—';
+  document.getElementById('cur-usdt').textContent=usdt||'—';
+  document.getElementById('rate-hint').style.display='none';
+  document.getElementById('rate-msg').textContent='✓ 保存成功';
+  document.getElementById('rate-rmb').value='';
+  document.getElementById('rate-usdt').value='';
+  setTimeout(()=>document.getElementById('rate-msg').textContent='',2000);
+  renderRateHistory();
+}
+
+function renderRateHistory() {
+  const rates = getRates().slice(0,10);
+  const el = document.getElementById('rate-history');
+  if(!rates.length) { el.innerHTML='<p style="text-align:center;font-size:13px;color:#9ca3af;padding:16px">暂无记录</p>'; return; }
+  el.innerHTML = `<div style="display:flex;font-size:11px;color:#9ca3af;border-bottom:1px solid #f3f4f6;padding-bottom:6px;margin-bottom:4px">
+    <span style="flex:1">日期</span><span style="width:80px;text-align:center">RMB</span><span style="width:80px;text-align:center">USDT</span></div>`+
+  rates.map(r=>`<div style="display:flex;font-size:13px;padding:8px 0;border-bottom:1px solid #f9fafb">
+    <span style="flex:1;color:#6b7280">${r.date}</span>
+    <span style="width:80px;text-align:center;color:#1d4ed8;font-family:monospace">${r.rmb_rate}</span>
+    <span style="width:80px;text-align:center;color:#16a34a;font-family:monospace">${r.usdt_rate}</span>
+  </div>`).join('');
+}
+
+// ===== ARCHIVE =====
+function loadArchive() {
+  const archived = getClients().filter(c=>c.is_archived);
+  document.getElementById('archive-count').textContent = archived.length+' 条';
+  filterArchive();
+}
+
+function filterArchive() {
+  const all = getClients().filter(c=>c.is_archived);
+  const s = (document.getElementById('archive-search')||{}).value?.toLowerCase()||'';
+  const filtered = s ? all.filter(c=>(c.name||'').toLowerCase().includes(s)||(c.passport_no||'').toLowerCase().includes(s)) : all;
+  const el = document.getElementById('archive-list');
+  if(!filtered.length) { el.innerHTML='<div class="empty-state"><div style="font-size:48px;margin-bottom:8px">📦</div><p style="font-size:14px">归档区为空</p></div>'; return; }
+  el.innerHTML = filtered.map(c=>`<button class="client-card" onclick="showDetail('${c.id}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="font-weight:600;color:#374151">${esc(c.name)}</span>
+          <span style="font-size:10px;background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:4px">已归档</span>
+        </div>
+        <div style="font-size:12px;color:#9ca3af">${esc(c.passport_no||'—')} · ${esc(c.phone||'—')}</div>
+        <div style="font-size:12px;color:#6b7280;margin-top:2px">${esc(c.application_type||'—')}</div>
+        ${c.approval_date?`<div style="font-size:11px;color:#7c3aed;margin-top:2px">批文: ${fmtDate(c.approval_date)}</div>`:''}
+        ${c.visa_attended?`<div style="font-size:11px;color:#16a34a;margin-top:2px">✅ 已上签 ${fmtDate(c.visa_attended_date)}</div>`:''}
+      </div>
+      <div style="text-align:right;margin-left:10px">
+        <div style="font-size:13px;font-weight:600;color:#374151">${fmtMYR(c.actual_myr)}</div>
+        <div style="font-size:11px;${parseFloat(c.profit||0)>=0?'color:#16a34a':'color:#ef4444'}">利润 ${parseFloat(c.profit||0).toFixed(2)}</div>
+        <div style="font-size:10px;color:#d1d5db;margin-top:4px">${fmtDate(c.archived_at)}</div>
+      </div>
+    </div>
+  </button>`).join('');
+}
+
+// ===== SETTINGS =====
+function loadSettings() {
+  const all = getClients();
+  const active = all.filter(c=>!c.is_archived);
+  const archived = all.filter(c=>c.is_archived);
+  document.getElementById('settings-count').textContent = `${active.length} 活跃 / ${archived.length} 归档`;
+  const roleEl = document.getElementById('role-display');
+  if(roleEl) roleEl.innerHTML = isBoss()
+    ? '<span style="color:#f59e0b">👑 老板</span>'
+    : '<span style="color:#2563eb">👤 员工</span>';
+  // Show/hide boss-only elements
+  const bossPwdCard = document.getElementById('boss-pwd-card');
+  const dangerZone = document.getElementById('danger-zone-card');
+  if(bossPwdCard) bossPwdCard.style.display = isBoss() ? 'block' : 'none';
+  if(dangerZone) dangerZone.style.display = isBoss() ? 'block' : 'none';
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec';
+  const url = localStorage.getItem('visa_sheet_url')||DEFAULT_SHEET_URL;
+  const el = document.getElementById('sheet-url');
+  if(el) el.value = url;
+  const lastSync = localStorage.getItem('visa_last_sync');
+  const syncEl = document.getElementById('last-sync-time');
+  if(syncEl) syncEl.textContent = lastSync ? '上次同步: '+lastSync : '尚未同步';
+}
+
+function savePwds() {
+  const bp = document.getElementById('new-boss-pwd').value.trim();
+  const sp = document.getElementById('new-staff-pwd').value.trim();
+  if(bp) localStorage.setItem('crm_boss_pwd', bp);
+  if(sp) localStorage.setItem('crm_staff_pwd', sp);
+  document.getElementById('pwd-msg').textContent = '✅ 密码已保存';
+  document.getElementById('new-boss-pwd').value = '';
+  document.getElementById('new-staff-pwd').value = '';
+  setTimeout(()=>{ const m=document.getElementById('pwd-msg'); if(m) m.textContent=''; }, 3000);
+}
+
+function saveSheetUrl() {
+  const url = document.getElementById('sheet-url').value.trim();
+  localStorage.setItem('visa_sheet_url', url);
+  showSyncMsg('✓ URL 已保存', '#16a34a');
+}
+
+async function syncToSheet() {
+  const url = document.getElementById('sheet-url').value.trim() || localStorage.getItem('visa_sheet_url')||'';
+  if(!url) { showSyncMsg('⚠️ 请先填写 Apps Script URL', '#f59e0b'); return; }
+  showSyncMsg('⏳ 同步中...', '#6b7280');
+  const clients = getClients();
+  const rates = getRates();
+  const payload = JSON.stringify({ type: 'all', clients, rates });
+  const now = new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+  try {
+    // no-cors 模式绕过 CORS，适合本地 file:// 打开
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: payload
+    });
+    localStorage.setItem('visa_last_sync', now);
+    localStorage.setItem('visa_sheet_url', url);
+    showSyncMsg('✅ 同步完成！共 '+clients.length+' 条，请刷新 Google Sheet', '#16a34a');
+    const syncEl = document.getElementById('last-sync-time');
+    if(syncEl) syncEl.textContent = '上次同步: '+now;
+  } catch(e) {
+    showSyncMsg('❌ 网络错误，请检查网络连接', '#dc2626');
+  }
+}
+
+function showSyncMsg(msg, color) {
+  const el = document.getElementById('sync-msg');
+  if(el) { el.textContent=msg; el.style.color=color; }
+}
+
+function exportData() {
+  const data = { clients: getClients(), rates: getRates(), exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `visa-backup-${today()}.json`;
+  a.click();
+}
+
+function exportCSV() {
+  const clients = getClients();
+  if(!clients.length) { alert('没有数据可导出'); return; }
+  const headers = ['姓名','性别','国籍','护照号码','出生日期','电话','微信','客户群','代理名字','负责人','申请项目','处理状态','提交日期','批文日期','贴签日期','到期日期','已上签证','上签证日期','付款币种','收款金额','实际MYR','Deposit','尾款','本钱','代理佣金','额外收入','公司利润','是否归档','创建日期'];
+  const rows = clients.map(c=>[
+    c
