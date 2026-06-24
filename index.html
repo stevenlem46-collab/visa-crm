@@ -102,9 +102,12 @@ input:focus,select:focus,textarea:focus{border-color:#3b82f6}
   <div class="header">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <span style="font-weight:600;font-size:16px">客户列表</span>
-      <button onclick="loadCustomers()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
-        <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      </button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button onclick="toggleCustCal()" id="cust-cal-btn" style="background:rgba(255,255,255,0.15);border:none;color:#fff;cursor:pointer;border-radius:8px;padding:5px 10px;font-size:13px">📅 日历</button>
+        <button onclick="loadCustomers()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
+          <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        </button>
+      </div>
     </div>
     <input id="search-input" type="text" placeholder="搜索姓名、护照号、电话..." style="border:0;border-radius:8px;padding:8px 12px;font-size:13px;width:100%;margin-bottom:6px;color:#111827" oninput="filterCustomers()">
     <div class="tab-bar" id="status-tabs">
@@ -118,6 +121,7 @@ input:focus,select:focus,textarea:focus{border-color:#3b82f6}
       <button class="tab" data-filter="未上签" onclick="setTab(this,'未上签')">⏳ 未上签</button>
     </div>
   </div>
+  <div id="cust-cal-panel" style="display:none;position:fixed;top:140px;left:0;right:0;z-index:35;padding:8px 12px 0"></div>
   <div id="customers-list" style="padding:140px 12px 12px"></div>
 </div>
 
@@ -681,6 +685,74 @@ function filterByExpiry(t) { currentFilter='expiry_'+t; showPage('customers'); }
 function filterByPendingPay() { currentFilter='pending_pay'; showPage('customers'); }
 function filterByDay(d) { currentFilter='day_'+d; showPage('customers'); }
 function filterByMonth(m) { currentFilter='month_'+m; showPage('customers'); }
+
+// ===== CUSTOMER PAGE CALENDAR =====
+let _custCalShow = false;
+let _custCalDate = today();
+
+function toggleCustCal() {
+  _custCalShow = !_custCalShow;
+  const btn = document.getElementById('cust-cal-btn');
+  if(btn) btn.style.background = _custCalShow ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.15)';
+  renderCustCal();
+}
+
+function custCalPrev() { const d=new Date(_custCalDate); d.setDate(1); d.setMonth(d.getMonth()-1); _custCalDate=d.toISOString().split('T')[0]; renderCustCal(); }
+function custCalNext() { const d=new Date(_custCalDate); d.setDate(1); d.setMonth(d.getMonth()+1); _custCalDate=d.toISOString().split('T')[0]; renderCustCal(); }
+function custCalPickDay(d) { _custCalDate=d; currentFilter='day_'+d; filterCustomers(); renderCustCal(); }
+function custCalPickMonth() { const m=_custCalDate.substring(0,7); currentFilter='month_'+m; filterCustomers(); renderCustCal(); }
+
+function renderCustCal() {
+  const el = document.getElementById('cust-cal-panel');
+  if(!el) return;
+  if(!_custCalShow) { el.style.display='none'; document.getElementById('customers-list').style.paddingTop='140px'; return; }
+  el.style.display='block';
+
+  const clients = getClients().filter(c=>!c.is_archived);
+  const selY = _custCalDate.substring(0,4), selM = _custCalDate.substring(5,7);
+  const mStart=`${selY}-${selM}-01`, mEnd=`${selY}-${selM}-31`;
+  const monthC = clients.filter(c=>c.created_at&&c.created_at>=mStart&&c.created_at<=mEnd);
+  const tod = today();
+
+  const dealsByDay = {};
+  monthC.forEach(c=>{ const d=(c.created_at||'').substring(0,10); dealsByDay[d]=(dealsByDay[d]||0)+1; });
+
+  const firstDay = new Date(parseInt(selY), parseInt(selM)-1, 1).getDay();
+  const daysInMonth = new Date(parseInt(selY), parseInt(selM), 0).getDate();
+  const dayLabels = ['日','一','二','三','四','五','六'];
+  let cells = '';
+  for(let i=0;i<firstDay;i++) cells+=`<div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds=`${selY}-${selM}-${String(d).padStart(2,'0')}`;
+    const cnt=dealsByDay[ds]||0;
+    const isSel=(currentFilter==='day_'+ds);
+    const isTod=ds===tod;
+    const bg=isSel?'#2563eb':cnt>0?'#eff6ff':'transparent';
+    const col=isSel?'#fff':cnt>0?'#2563eb':'#374151';
+    cells+=`<div onclick="custCalPickDay('${ds}')" style="cursor:pointer;border-radius:8px;padding:4px 2px;background:${bg};text-align:center;${isTod&&!isSel?'outline:2px solid #2563eb;':''}">
+      <div style="font-size:12px;font-weight:${isSel?700:500};color:${col}">${d}</div>
+      ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${isSel?'#bfdbfe':'#60a5fa'};line-height:1">${cnt}</div>`:'<div style="height:13px"></div>'}
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:12px 14px;margin-bottom:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button onclick="custCalPrev()" style="background:#f3f4f6;border:none;border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer">‹</button>
+        <button onclick="custCalPickMonth()" style="background:none;border:none;font-size:13px;font-weight:600;color:#374151;cursor:pointer">${selY} 年 ${selM} 月 · ${monthC.length} 人</button>
+        <button onclick="custCalNext()" style="background:#f3f4f6;border:none;border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px">
+        ${dayLabels.map(l=>`<div style="text-align:center;font-size:10px;color:#9ca3af;padding:2px 0">${l}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">${cells}</div>
+      <button onclick="custCalPickMonth()" style="width:100%;margin-top:10px;padding:8px;background:#f0fdf4;border:none;border-radius:8px;font-size:12px;font-weight:600;color:#16a34a;cursor:pointer">📊 查看本月全部 ${monthC.length} 人</button>
+    </div>
+  `;
+  // Adjust list padding
+  const panelH = el.offsetHeight;
+  document.getElementById('customers-list').style.paddingTop = (140 + panelH + 8) + 'px';
+}
 function setTabAndShow(filter) {
   currentFilter = filter;
   showPage('customers');
@@ -702,6 +774,7 @@ let _allClients = [];
 function renderCustomers(all) {
   _allClients = all;
   filterCustomers();
+  setTimeout(renderCustCal, 50);
 }
 
 function setTab(el, filter) {
