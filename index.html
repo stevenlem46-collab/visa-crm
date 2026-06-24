@@ -465,6 +465,8 @@ let _dashDate = today();
 function dashPrevDay() { const d=new Date(_dashDate); d.setDate(d.getDate()-1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 function dashNextDay() { const d=new Date(_dashDate); d.setDate(d.getDate()+1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 function dashSetDate(v) { if(v) { _dashDate=v; refreshDashboard(); } }
+function dashPrevMonth() { const d=new Date(_dashDate); d.setDate(1); d.setMonth(d.getMonth()-1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
+function dashNextMonth() { const d=new Date(_dashDate); d.setDate(1); d.setMonth(d.getMonth()+1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
 
 function refreshDashboard() {
   const clients = getClients().filter(c=>!c.is_archived);
@@ -489,6 +491,49 @@ function refreshDashboard() {
   const monthC = clients.filter(c=>c.created_at&&c.created_at>=mStart&&c.created_at<=mEnd);
   const monthRev = monthC.reduce((s,c)=>s+(parseFloat(c.actual_myr)||0),0);
   const monthProfit = monthC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+
+  // Build calendar: count deals per day in selected month
+  const dealsByDay = {};
+  monthC.forEach(c => {
+    const d = (c.created_at||'').substring(0,10);
+    dealsByDay[d] = (dealsByDay[d]||0) + 1;
+  });
+  // Calendar grid
+  const calYear = parseInt(selY), calMonth = parseInt(selM)-1;
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const dayLabels = ['日','一','二','三','四','五','六'];
+  let calCells = '';
+  // Empty cells before first day
+  for(let i=0;i<firstDay;i++) calCells += `<div></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = `${selY}-${selM}-${String(d).padStart(2,'0')}`;
+    const cnt = dealsByDay[ds]||0;
+    const isSel = ds===selDate;
+    const isTod = ds===tod;
+    const bg = isSel?'#2563eb':cnt>0?'#eff6ff':'transparent';
+    const color = isSel?'#fff':cnt>0?'#2563eb':'#374151';
+    const numColor = isSel?'#bfdbfe':cnt>0?'#60a5fa':'transparent';
+    calCells += `<div onclick="dashSetDate('${ds}')" style="cursor:pointer;border-radius:8px;padding:4px 2px;background:${bg};text-align:center;${isTod&&!isSel?'outline:2px solid #2563eb;':''}">
+      <div style="font-size:12px;font-weight:${isSel?700:500};color:${color}">${d}</div>
+      ${cnt>0?`<div style="font-size:10px;font-weight:700;color:${numColor};line-height:1">${cnt}</div>`:'<div style="height:13px"></div>'}
+    </div>`;
+  }
+  const calHTML = `
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button onclick="dashPrevMonth()" style="background:#f3f4f6;border:none;border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer">‹</button>
+        <span style="font-size:13px;font-weight:600;color:#374151">${selY} 年 ${selM} 月</span>
+        <button onclick="dashNextMonth()" style="background:#f3f4f6;border:none;border-radius:6px;width:28px;height:28px;font-size:16px;cursor:pointer">›</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+        ${dayLabels.map(l=>`<div style="text-align:center;font-size:10px;color:#9ca3af;padding:2px 0">${l}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">
+        ${calCells}
+      </div>
+    </div>
+  `;
   const pendingApproval = clients.filter(c=>c.status==='等待批文').length;
   const pendingFollow = clients.filter(c=>c.status==='提交资料').length;
   const pendingPay = clients.filter(c=>(parseFloat(c.balance_due)||0)>0).length;
@@ -537,6 +582,7 @@ function refreshDashboard() {
         </div>
       </div>
     </div>
+    ${calHTML}
     <!-- Day Customer List -->
     <div class="card" style="padding:12px 14px">
       <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">📋 当日客户（${dayDeals} 人）</div>
