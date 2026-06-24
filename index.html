@@ -369,6 +369,7 @@ class _SBQuery {
   update(obj){this._mode='update';this._data=obj;return this;}
   delete(){this._mode='delete';return this;}
   upsert(rows){this._mode='upsert';this._data=Array.isArray(rows)?rows:[rows];return this;}
+  single(){this._single=true;return this;}
   _h(extra={}){return{apikey:SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json',...extra};}
   _filterUrl(){return this._f.length?this._f.join('&'):'';}
   async _run(){
@@ -385,7 +386,8 @@ class _SBQuery {
       if(this._mode==='insert'){
         const r=await fetch(base,{method:'POST',headers:this._h({Prefer:'return=representation'}),body:JSON.stringify(this._data)});
         const d=await r.json();
-        return{data:r.ok?(Array.isArray(d)?d:[d]):null,error:r.ok?null:d};
+        const rows=r.ok?(Array.isArray(d)?d:[d]):null;
+        return{data:r.ok?(this._single?rows[0]:rows):null,error:r.ok?null:d};
       }
       if(this._mode==='update'){
         const q=this._filterUrl();
