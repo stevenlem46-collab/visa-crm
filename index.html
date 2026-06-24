@@ -460,19 +460,32 @@ function showPage(p) {
 function goBack() { showPage(backPage); }
 
 // ===== DASHBOARD =====
+let _dashDate = today();
+
+function dashPrevDay() { const d=new Date(_dashDate); d.setDate(d.getDate()-1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
+function dashNextDay() { const d=new Date(_dashDate); d.setDate(d.getDate()+1); _dashDate=d.toISOString().split('T')[0]; refreshDashboard(); }
+function dashSetDate(v) { if(v) { _dashDate=v; refreshDashboard(); } }
+
 function refreshDashboard() {
   const clients = getClients().filter(c=>!c.is_archived);
   const tod = today();
+  const selDate = _dashDate || tod;
+  const isToday = selDate === tod;
   const now = new Date();
   const y = now.getFullYear(), m = String(now.getMonth()+1).padStart(2,'0');
-  const mStart = `${y}-${m}-01`;
-  const mEnd = `${y}-${m}-31`;
+  // Month from selected date
+  const selY = selDate.substring(0,4), selM = selDate.substring(5,7);
+  const mStart = `${selY}-${selM}-01`;
+  const mEnd = `${selY}-${selM}-31`;
   const in30 = new Date(now); in30.setDate(in30.getDate()+30); const in30s = in30.toISOString().split('T')[0];
   const in90 = new Date(now); in90.setDate(in90.getDate()+90); const in90s = in90.toISOString().split('T')[0];
 
-  const todayC = clients.filter(c=>c.created_at&&c.created_at.startsWith(tod));
-  const todayDeals = todayC.length;
-  const todayProfit = todayC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+  // Selected day clients
+  const dayC = clients.filter(c=>c.created_at&&c.created_at.startsWith(selDate));
+  const dayDeals = dayC.length;
+  const dayRev = dayC.reduce((s,c)=>s+(parseFloat(c.actual_myr)||0),0);
+  const dayProfit = dayC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
+
   const monthC = clients.filter(c=>c.created_at&&c.created_at>=mStart&&c.created_at<=mEnd);
   const monthRev = monthC.reduce((s,c)=>s+(parseFloat(c.actual_myr)||0),0);
   const monthProfit = monthC.reduce((s,c)=>s+(parseFloat(c.profit)||0),0);
@@ -494,26 +507,58 @@ function refreshDashboard() {
   const rankColors = ['#f59e0b','#9ca3af','#f97316','#60a5fa'];
 
   document.getElementById('dashboard-content').innerHTML = `
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <span style="font-size:12px;color:#9ca3af">📅 今日 ${tod}</span>
-        <span style="font-size:11px;color:#d1d5db">活跃客户 ${clients.length} 人</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div style="background:#eff6ff;border-radius:10px;padding:14px">
-          <div style="font-size:11px;color:#6b7280">今日成交</div>
-          <div style="font-size:30px;font-weight:700;color:#2563eb;margin:4px 0 2px">${todayDeals}</div>
-          <div style="font-size:11px;color:#9ca3af">笔</div>
+    <!-- DATE NAVIGATOR -->
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <button onclick="dashPrevDay()" style="background:#f3f4f6;border:none;border-radius:8px;width:36px;height:36px;font-size:20px;cursor:pointer">‹</button>
+        <div style="text-align:center;flex:1;margin:0 8px">
+          <div style="font-size:15px;font-weight:700;color:#1f2937">${selDate}</div>
+          <div style="font-size:11px;color:#9ca3af">${isToday?'今天':''}</div>
         </div>
-        <div style="background:#f0fdf4;border-radius:10px;padding:14px">
-          <div style="font-size:11px;color:#6b7280">今日利润</div>
-          <div style="font-size:24px;font-weight:700;color:#16a34a;margin:4px 0 2px">${isBoss()?todayProfit.toFixed(0):'—'}</div>
-          <div style="font-size:11px;color:#9ca3af">MYR</div>
+        <button onclick="dashNextDay()" style="background:#f3f4f6;border:none;border-radius:8px;width:36px;height:36px;font-size:20px;cursor:pointer">›</button>
+        <input type="date" id="dash-date-pick" value="${selDate}" onchange="dashSetDate(this.value)" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none">
+        <button onclick="document.getElementById('dash-date-pick').showPicker?document.getElementById('dash-date-pick').showPicker():document.getElementById('dash-date-pick').click()" style="background:#eff6ff;border:none;border-radius:8px;width:36px;height:36px;font-size:16px;cursor:pointer;margin-left:6px">📅</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:#eff6ff;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#6b7280">成交</div>
+          <div style="font-size:28px;font-weight:700;color:#2563eb;margin:2px 0">${dayDeals}</div>
+          <div style="font-size:10px;color:#9ca3af">笔</div>
+        </div>
+        <div style="background:#fff7ed;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#6b7280">营业额</div>
+          <div style="font-size:20px;font-weight:700;color:#ea580c;margin:2px 0">${dayRev>=1000?(dayRev/1000).toFixed(1)+'K':dayRev.toFixed(0)}</div>
+          <div style="font-size:10px;color:#9ca3af">MYR</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:10px;color:#6b7280">利润</div>
+          <div style="font-size:20px;font-weight:700;color:#16a34a;margin:2px 0">${isBoss()?(dayProfit>=1000?(dayProfit/1000).toFixed(1)+'K':dayProfit.toFixed(0)):'—'}</div>
+          <div style="font-size:10px;color:#9ca3af">MYR</div>
         </div>
       </div>
     </div>
+    <!-- Day Customer List -->
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">📋 当日客户（${dayDeals} 人）</div>
+      ${dayDeals===0
+        ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">当天没有新增客户</div>`
+        : dayC.map(c=>`
+          <div onclick="editClient('${c.id}')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:#1f2937">${c.name||'—'}</div>
+              <div style="font-size:11px;color:#6b7280;margin-top:2px">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:12px;font-weight:600;color:#2563eb">MYR ${(parseFloat(c.actual_myr)||0).toFixed(0)}</div>
+              <div style="font-size:10px;margin-top:2px;padding:2px 6px;background:#eff6ff;border-radius:8px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
+            </div>
+          </div>
+        `).join('')
+      }
+    </div>
+    <!-- Monthly Summary -->
     <div class="card">
-      <div style="font-size:12px;color:#9ca3af;margin-bottom:10px">📊 本月 ${y}-${m}</div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:10px">📊 本月 ${selY}-${selM}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
         <div style="text-align:center">
           <div style="font-size:11px;color:#6b7280">客户数</div>
