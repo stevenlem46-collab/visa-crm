@@ -602,6 +602,31 @@ function refreshDashboard() {
         `).join('')
       }
     </div>
+    <!-- Monthly Customer List -->
+    <div class="card" style="padding:12px 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:600;color:#374151">📋 本月全部客户（${monthC.length} 人）</div>
+        <div style="font-size:11px;color:#9ca3af">${selY}-${selM}</div>
+      </div>
+      ${monthC.length===0
+        ? `<div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">本月暂无客户</div>`
+        : monthC.slice().sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||'')).map(c=>{
+            const ds = (c.created_at||'').substring(0,10);
+            const dayNum = ds.substring(8,10);
+            return `<div onclick="editClient('${c.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f3f4f6;cursor:pointer">
+              <div style="min-width:28px;height:28px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6b7280">${dayNum}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name||'—'}</div>
+                <div style="font-size:11px;color:#6b7280;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.visa_type||'—'} · ${c.responsible_person||'—'}</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:12px;font-weight:600;color:#2563eb">MYR ${(parseFloat(c.actual_myr)||0).toFixed(0)}</div>
+                <div style="font-size:10px;margin-top:2px;padding:1px 5px;background:#eff6ff;border-radius:6px;color:#3b82f6;display:inline-block">${c.status||'—'}</div>
+              </div>
+            </div>`;
+          }).join('')
+      }
+    </div>
     <!-- Monthly Summary -->
     <div class="card">
       <div style="font-size:12px;color:#9ca3af;margin-bottom:10px">📊 本月 ${selY}-${selM}</div>
