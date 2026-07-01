@@ -263,7 +263,7 @@ input:focus,select:focus,textarea:focus{border-color:#3b82f6}
       <p style="font-size:13px;color:#6b7280;margin-bottom:10px">同步后可在 Google Sheet 查账、查利润</p>
       <div style="margin-bottom:10px">
         <label class="field-label">Apps Script URL</label>
-        <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec" style="font-size:12px">
+        <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s//exec" style="font-size:12px">
         <p style="font-size:11px;color:#9ca3af;margin-top:4px">粘贴你的 Google Apps Script 部署 URL</p>
       </div>
       <div id="sync-msg" style="font-size:13px;min-height:18px;margin-bottom:4px"></div>
@@ -1212,7 +1212,7 @@ async function saveClient() {
 
 // ===== AUTO SYNC (Google Sheets - optional) =====
 async function autoSync() {
-  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec';
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s//exec';
   const url = localStorage.getItem('visa_sheet_url') || DEFAULT_SHEET_URL;
   if(!url) return;
   try {
@@ -1329,7 +1329,7 @@ function loadSettings() {
   const dangerZone = document.getElementById('danger-zone-card');
   if(bossPwdCard) bossPwdCard.style.display = isBoss() ? 'block' : 'none';
   if(dangerZone) dangerZone.style.display = isBoss() ? 'block' : 'none';
-  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzTQCv_C7W3nZc8wF3DzrCU_rd7lmwJ68XS5q0LbEkSdAhkB0F57CKomVK6ITQ-ejvu/exec';
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s//exec';
   const url = localStorage.getItem('visa_sheet_url')||DEFAULT_SHEET_URL;
   const el = document.getElementById('sheet-url');
   if(el) el.value = url;
