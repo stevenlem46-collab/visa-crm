@@ -1359,8 +1359,15 @@ async function syncToSheet() {
   const url = document.getElementById('sheet-url').value.trim() || localStorage.getItem('visa_sheet_url')||'';
   if(!url) { showSyncMsg('⚠️ 请先填写 Apps Script URL', '#f59e0b'); return; }
   showSyncMsg('⏳ 同步中...', '#6b7280');
-  const clients = getClients();
-  const rates = getRates();
+  // 每次同步前从 Supabase 拉取最新数据，避免缓存不一致
+  const [cr, rr] = await Promise.all([
+    sb.from('clients').select('*').order('sort_order', {ascending: false}),
+    sb.from('exchange_rates').select('*').order('date', {ascending: false})
+  ]);
+  if(cr.data) clientsCache = cr.data;
+  if(rr.data) ratesCache = rr.data;
+  const clients = clientsCache;
+  const rates = ratesCache;
   const payload = JSON.stringify({ type: 'all', clients, rates });
   const now = new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
   try {
