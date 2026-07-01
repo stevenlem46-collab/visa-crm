@@ -1216,8 +1216,8 @@ async function autoSync() {
   const url = localStorage.getItem('visa_sheet_url') || DEFAULT_SHEET_URL;
   if(!url) return;
   try {
-    const clients = getClients();
-    const rates = getRates();
+
+    // 每次同步前从 Supabase 拉取最新数据，避免缓存不一致     const [cr, rr] = await Promise.all([       sb.from('clients').select('*').order('sort_order', {ascending: false}),       sb.from('exchange_rates').select('*').order('date', {ascending: false})     ]);     if(cr.data) clientsCache = cr.data;     if(rr.data) ratesCache = rr.data;     const clients = clientsCache;
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({type:'all',clients,rates}) });
     const now = new Date().toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
     localStorage.setItem('visa_last_sync', now);
