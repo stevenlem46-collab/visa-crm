@@ -88,6 +88,7 @@ input:focus,select:focus,textarea:focus{border-color:#3b82f6}
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-weight:600;font-size:16px">签证管理 V2.0</span>
       <div style="display:flex;gap:12px">
+        <button onclick="syncToSheet()" title="同步到 Google Sheet" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer;font-size:16px">📊</button>
         <button onclick="refreshDashboard()" style="background:none;border:none;color:rgba(255,255,255,0.8);cursor:pointer">
           <svg style="width:20px;height:20px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
         </button>
@@ -1361,7 +1362,8 @@ function saveSheetUrl() {
 }
 
 async function syncToSheet() {
-  const url = document.getElementById('sheet-url').value.trim() || localStorage.getItem('visa_sheet_url')||'';
+  const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwQG5t2XgKAYs7O5nQnXjwO5_AXZQqmyGWtOS9nCuYUO12vlOEI4aLNiOOUyYpweDUC/exec';
+  const url = document.getElementById('sheet-url')?.value?.trim() || localStorage.getItem('visa_sheet_url') || DEFAULT_SHEET_URL;
   if(!url) { showSyncMsg('⚠️ 请先填写 Apps Script URL', '#f59e0b'); return; }
   showSyncMsg('⏳ 同步中...', '#6b7280');
   // 每次同步前从 Supabase 拉取最新数据，避免缓存不一致
